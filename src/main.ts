@@ -21,6 +21,7 @@ const cursor = { active: false };
 type Point = { x: number; y: number };
 let strokes: Point[][] = []; // Array of strokes, each stroke is an array of points
 let currentStroke: Point[] = [];
+let redoStack: Point[][] = []; // Stack for redo functionality
 
 canvas.addEventListener("mousedown", () => {
   cursor.active = true;
@@ -55,6 +56,8 @@ canvas.addEventListener("drawing-changed", () => {
   }
 });
 
+document.body.append(document.createElement("br"));
+
 // Clear button
 const clearButton = document.createElement("button");
 clearButton.textContent = "clear";
@@ -63,4 +66,29 @@ document.body.append(clearButton);
 clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   strokes = [];
+  redoStack = [];
+});
+
+// Undo button
+const undoButton = document.createElement("button");
+undoButton.textContent = "undo";
+document.body.append(undoButton);
+
+undoButton.addEventListener("click", () => {
+  if (strokes.length > 0) {
+    redoStack.push(strokes.pop()!);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  }
+});
+
+// Redo button
+const redoButton = document.createElement("button");
+redoButton.textContent = "redo";
+document.body.append(redoButton);
+
+redoButton.addEventListener("click", () => {
+  if (redoStack.length > 0) {
+    strokes.push(redoStack.pop()!);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  }
 });
