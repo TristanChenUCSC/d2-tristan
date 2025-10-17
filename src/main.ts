@@ -16,28 +16,43 @@ document.body.append(canvas);
 
 // Drawing logic
 const ctx = canvas.getContext("2d")!;
+const cursor = { active: false };
 
-const cursor = { active: false, x: 0, y: 0 };
+type Point = { x: number; y: number };
+let strokes: Point[][] = []; // Array of strokes, each stroke is an array of points
+let currentStroke: Point[] = [];
 
-canvas.addEventListener("mousedown", (e) => {
+canvas.addEventListener("mousedown", () => {
   cursor.active = true;
-  cursor.x = e.offsetX;
-  cursor.y = e.offsetY;
+  currentStroke = [];
+  strokes.push(currentStroke);
 });
 
 canvas.addEventListener("mousemove", (e) => {
   if (cursor.active) {
-    ctx.beginPath();
-    ctx.moveTo(cursor.x, cursor.y);
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-    cursor.x = e.offsetX;
-    cursor.y = e.offsetY;
+    currentStroke.push({ x: e.offsetX, y: e.offsetY });
+    canvas.dispatchEvent(new Event("drawing-changed"));
   }
 });
 
 canvas.addEventListener("mouseup", () => {
   cursor.active = false;
+});
+
+// Observer for redrawing
+canvas.addEventListener("drawing-changed", () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const stroke of strokes) {
+    if (stroke.length > 1) {
+      ctx.beginPath();
+      const { x, y } = stroke[0];
+      ctx.moveTo(x, y);
+      for (const { x, y } of stroke) {
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
 });
 
 // Clear button
@@ -47,4 +62,5 @@ document.body.append(clearButton);
 
 clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  strokes = [];
 });
