@@ -24,10 +24,19 @@ interface DisplayCommand {
   display(ctx: CanvasRenderingContext2D): void;
 }
 
+// Marker type
+interface MarkerType {
+  thickness: number;
+}
+
 type Point = { x: number; y: number };
 
 // Factory function to create a marker line
-function makeMarkerLine(initial_x: number, initial_y: number): DisplayCommand {
+function makeMarkerLine(
+  initial_x: number,
+  initial_y: number,
+  tool: MarkerType,
+): DisplayCommand {
   const points: Point[] = [{ x: initial_x, y: initial_y }];
   return {
     drag(x: number, y: number) {
@@ -35,6 +44,7 @@ function makeMarkerLine(initial_x: number, initial_y: number): DisplayCommand {
     },
     display(ctx: CanvasRenderingContext2D) {
       if (points.length > 1) {
+        ctx.lineWidth = tool.thickness;
         ctx.beginPath();
         const { x, y } = points[0];
         ctx.moveTo(x, y);
@@ -51,10 +61,12 @@ let strokes: DisplayCommand[] = []; // All strokes represented as DisplayCommand
 let currentStroke: DisplayCommand | null = null;
 let redoStack: DisplayCommand[] = []; // Stack for redo functionality
 
+let currentMarkerTool: MarkerType = { thickness: 1 }; // Default tool
+
 // Mouse events
 canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
-  currentStroke = makeMarkerLine(e.offsetX, e.offsetY);
+  currentStroke = makeMarkerLine(e.offsetX, e.offsetY, currentMarkerTool);
   strokes.push(currentStroke);
 });
 
@@ -114,3 +126,35 @@ redoButton.addEventListener("click", () => {
     canvas.dispatchEvent(new Event("drawing-changed"));
   }
 });
+
+// Marker tools
+document.body.append(document.createElement("br"));
+const markerToolsLabel = document.createElement("div");
+markerToolsLabel.textContent = "Marker tools:";
+document.body.append(markerToolsLabel);
+
+// Thin
+const thinButton = document.createElement("button");
+thinButton.textContent = "thin";
+document.body.append(thinButton);
+
+// Thick
+const thickButton = document.createElement("button");
+thickButton.textContent = "thick";
+document.body.append(thickButton);
+
+// Tool selection logic
+let activeToolButton: HTMLButtonElement | null = thinButton;
+thinButton.classList.add("selectedTool");
+
+function setActiveTool(button: HTMLButtonElement, thickness: number) {
+  currentMarkerTool = { thickness };
+  if (activeToolButton) {
+    activeToolButton.classList.remove("selectedTool");
+  }
+  button.classList.add("selectedTool");
+  activeToolButton = button;
+}
+
+thinButton.addEventListener("click", () => setActiveTool(thinButton, 1));
+thickButton.addEventListener("click", () => setActiveTool(thickButton, 5));
