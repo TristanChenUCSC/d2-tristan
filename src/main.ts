@@ -14,45 +14,67 @@ canvas.width = 256;
 canvas.height = 256;
 document.body.append(canvas);
 
-// Drawing logic
+// Context
 const ctx = canvas.getContext("2d")!;
 const cursor = { active: false };
 
-type Point = { x: number; y: number };
-let strokes: Point[][] = []; // Array of strokes, each stroke is an array of points
-let currentStroke: Point[] = [];
-let redoStack: Point[][] = []; // Stack for redo functionality
+// DisplayCommand interface and implementation
+interface DisplayCommand {
+  drag(x: number, y: number): void;
+  display(ctx: CanvasRenderingContext2D): void;
+}
 
-canvas.addEventListener("mousedown", () => {
+type Point = { x: number; y: number };
+
+// Factory function to create a marker line
+function makeMarkerLine(initial_x: number, initial_y: number): DisplayCommand {
+  const points: Point[] = [{ x: initial_x, y: initial_y }];
+  return {
+    drag(x: number, y: number) {
+      points.push({ x, y });
+    },
+    display(ctx: CanvasRenderingContext2D) {
+      if (points.length > 1) {
+        ctx.beginPath();
+        const { x, y } = points[0];
+        ctx.moveTo(x, y);
+        for (const { x, y } of points) {
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    },
+  };
+}
+
+let strokes: DisplayCommand[] = []; // All strokes represented as DisplayCommands
+let currentStroke: DisplayCommand | null = null;
+let redoStack: DisplayCommand[] = []; // Stack for redo functionality
+
+// Mouse events
+canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
-  currentStroke = [];
+  currentStroke = makeMarkerLine(e.offsetX, e.offsetY);
   strokes.push(currentStroke);
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (cursor.active) {
-    currentStroke.push({ x: e.offsetX, y: e.offsetY });
+  if (cursor.active && currentStroke) {
+    currentStroke.drag(e.offsetX, e.offsetY);
     canvas.dispatchEvent(new Event("drawing-changed"));
   }
 });
 
 canvas.addEventListener("mouseup", () => {
   cursor.active = false;
+  currentStroke = null;
 });
 
 // Observer for redrawing
 canvas.addEventListener("drawing-changed", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (const stroke of strokes) {
-    if (stroke.length > 1) {
-      ctx.beginPath();
-      const { x, y } = stroke[0];
-      ctx.moveTo(x, y);
-      for (const { x, y } of stroke) {
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
+    stroke.display(ctx);
   }
 });
 
