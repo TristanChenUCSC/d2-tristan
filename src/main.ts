@@ -75,6 +75,45 @@ function makeToolPreview(
   };
 }
 
+// Factory function to create a sticker preview
+function makeStickerPreview(
+  x: number,
+  y: number,
+  content: string,
+): DisplayCommand {
+  return {
+    drag(_x: number, _y: number) {
+      // No drag functionality for preview
+    },
+    display(ctx: CanvasRenderingContext2D) {
+      ctx.font = "24px serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(content, x, y);
+    },
+  };
+}
+
+// Factory function to create a sticker
+function makeSticker(
+  initial_x: number,
+  initial_y: number,
+  content: string,
+): DisplayCommand {
+  let position = { x: initial_x, y: initial_y };
+  return {
+    drag(x: number, y: number) {
+      position = { x, y };
+    },
+    display(ctx: CanvasRenderingContext2D) {
+      ctx.font = "24px serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(content, position.x, position.y);
+    },
+  };
+}
+
 let strokes: DisplayCommand[] = []; // All strokes represented as DisplayCommands
 let currentStroke: DisplayCommand | null = null;
 let redoStack: DisplayCommand[] = []; // Stack for redo functionality
@@ -82,6 +121,16 @@ let redoStack: DisplayCommand[] = []; // Stack for redo functionality
 let currentMarkerTool: MarkerType = { thickness: 1 }; // Default tool
 let toolPreview: boolean = false;
 let toolPreviewCommand: DisplayCommand | null = null;
+
+// mode for stickers
+let stickerMode: boolean = false;
+
+interface Sticker {
+  content: string;
+  name: string;
+}
+
+let currentSticker: Sticker | null = null;
 
 // Mouse events
 canvas.addEventListener("mouseout", () => {
@@ -97,28 +146,48 @@ canvas.addEventListener("mouseenter", (e) => {
   if (toolPreview) {
     canvas.style.cursor = "none";
   }
-  toolPreviewCommand = makeToolPreview(
-    e.offsetX,
-    e.offsetY,
-    currentMarkerTool,
-  );
+  if (stickerMode) {
+    toolPreviewCommand = makeStickerPreview(
+      e.offsetX,
+      e.offsetY,
+      currentSticker!.content,
+    );
+  } else {
+    toolPreviewCommand = makeToolPreview(
+      e.offsetX,
+      e.offsetY,
+      currentMarkerTool,
+    );
+  }
   canvas.dispatchEvent(new Event("tool-moved"));
 });
 
 canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   toolPreview = false;
-  currentStroke = makeMarkerLine(e.offsetX, e.offsetY, currentMarkerTool);
+  if (stickerMode) {
+    currentStroke = makeSticker(e.offsetX, e.offsetY, currentSticker!.content);
+  } else {
+    currentStroke = makeMarkerLine(e.offsetX, e.offsetY, currentMarkerTool);
+  }
   strokes.push(currentStroke);
 });
 
 canvas.addEventListener("mousemove", (e) => {
   if (toolPreview) {
-    toolPreviewCommand = makeToolPreview(
-      e.offsetX,
-      e.offsetY,
-      currentMarkerTool,
-    );
+    if (stickerMode) {
+      toolPreviewCommand = makeStickerPreview(
+        e.offsetX,
+        e.offsetY,
+        currentSticker!.content,
+      );
+    } else {
+      toolPreviewCommand = makeToolPreview(
+        e.offsetX,
+        e.offsetY,
+        currentMarkerTool,
+      );
+    }
     canvas.style.cursor = "none";
     canvas.dispatchEvent(new Event("tool-moved"));
   }
@@ -214,6 +283,7 @@ let activeToolButton: HTMLButtonElement | null = thinButton;
 thinButton.classList.add("selectedTool");
 
 function setActiveTool(button: HTMLButtonElement, thickness: number) {
+  stickerMode = false;
   currentMarkerTool = { thickness };
   if (activeToolButton) {
     activeToolButton.classList.remove("selectedTool");
@@ -224,3 +294,33 @@ function setActiveTool(button: HTMLButtonElement, thickness: number) {
 
 thinButton.addEventListener("click", () => setActiveTool(thinButton, 1));
 thickButton.addEventListener("click", () => setActiveTool(thickButton, 5));
+
+// Emoji Stickers
+const stickers: Sticker[] = [
+  { content: "💀", name: "skull" },
+  { content: "🥀", name: "rose" },
+  { content: "💔", name: "heartbreak" },
+];
+
+document.body.append(document.createElement("br"));
+const stickersLabel = document.createElement("div");
+stickersLabel.textContent = "Stickers:";
+document.body.append(stickersLabel);
+
+// Sticker buttons
+for (const sticker of stickers) {
+  const button = document.createElement("button");
+  button.textContent = sticker.content;
+  document.body.append(button);
+
+  button.addEventListener("click", () => {
+    currentSticker = sticker;
+    stickerMode = true;
+    canvas.dispatchEvent(new Event("tool-moved"));
+    if (activeToolButton) {
+      activeToolButton.classList.remove("selectedTool");
+    }
+    button.classList.add("selectedTool");
+    activeToolButton = button;
+  });
+}
