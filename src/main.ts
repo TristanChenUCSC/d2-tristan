@@ -307,8 +307,8 @@ const stickersLabel = document.createElement("div");
 stickersLabel.textContent = "Stickers:";
 document.body.append(stickersLabel);
 
-// Sticker buttons
-for (const sticker of stickers) {
+// Make a button for a sticker
+function createStickerButton(sticker: Sticker) {
   const button = document.createElement("button");
   button.textContent = sticker.content;
   document.body.append(button);
@@ -324,3 +324,25 @@ for (const sticker of stickers) {
     activeToolButton = button;
   });
 }
+
+// Sticker buttons
+for (const sticker of stickers) {
+  createStickerButton(sticker);
+}
+
+// Custom Stickers
+document.body.append(document.createElement("br"));
+const customStickerLabel = document.createElement("div");
+customStickerLabel.textContent = "Add Custom Stickers:";
+document.body.append(customStickerLabel);
+
+const addStickerButton = document.createElement("button");
+addStickerButton.textContent = "Add Sticker";
+document.body.append(addStickerButton);
+
+addStickerButton.addEventListener("click", () => {
+  const text = prompt("Custom sticker text", "🧽");
+  const customSticker: Sticker = { content: text || "🧽", name: "custom" };
+  stickers.push(customSticker);
+  createStickerButton(customSticker);
+});
