@@ -114,6 +114,7 @@ function makeSticker(
   };
 }
 
+// State variables
 let strokes: DisplayCommand[] = []; // All strokes represented as DisplayCommands
 let currentStroke: DisplayCommand | null = null;
 let redoStack: DisplayCommand[] = []; // Stack for redo functionality
@@ -260,6 +261,30 @@ redoButton.addEventListener("click", () => {
     strokes.push(redoStack.pop()!);
     canvas.dispatchEvent(new Event("drawing-changed"));
   }
+});
+
+// Export button
+const exportButton = document.createElement("button");
+exportButton.textContent = "export";
+document.body.append(exportButton);
+exportButton.addEventListener("click", () => {
+  const newCanvas = document.createElement("canvas");
+  newCanvas.width = 1024;
+  newCanvas.height = 1024;
+
+  const newCtx = newCanvas.getContext("2d")!;
+  newCtx.scale(4, 4); // Scale up for higher resolution
+
+  newCtx.fillStyle = "white";
+  newCtx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+  for (const stroke of strokes) {
+    stroke.display(newCtx);
+  }
+
+  const anchor = document.createElement("a");
+  anchor.href = newCanvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
 });
 
 // Marker tools
