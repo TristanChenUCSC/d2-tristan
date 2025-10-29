@@ -86,7 +86,7 @@ function makeStickerPreview(
       // No drag functionality for preview
     },
     display(ctx: CanvasRenderingContext2D) {
-      ctx.font = "24px serif";
+      ctx.font = "32px serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(content, x, y);
@@ -106,7 +106,7 @@ function makeSticker(
       position = { x, y };
     },
     display(ctx: CanvasRenderingContext2D) {
-      ctx.font = "24px serif";
+      ctx.font = "32px serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(content, position.x, position.y);
@@ -119,7 +119,11 @@ let strokes: DisplayCommand[] = []; // All strokes represented as DisplayCommand
 let currentStroke: DisplayCommand | null = null;
 let redoStack: DisplayCommand[] = []; // Stack for redo functionality
 
-let currentMarkerTool: MarkerType = { thickness: 1 }; // Default tool
+// Magic numbers for marker thickness
+const thin_thickness = 2;
+const thick_thickness = 6;
+
+let currentMarkerTool: MarkerType = { thickness: thin_thickness }; // Default tool
 let toolPreview: boolean = false;
 let toolPreviewCommand: DisplayCommand | null = null;
 
@@ -317,14 +321,27 @@ function setActiveTool(button: HTMLButtonElement, thickness: number) {
   activeToolButton = button;
 }
 
-thinButton.addEventListener("click", () => setActiveTool(thinButton, 1));
-thickButton.addEventListener("click", () => setActiveTool(thickButton, 5));
+thinButton.addEventListener(
+  "click",
+  () => setActiveTool(thinButton, thin_thickness),
+);
+thickButton.addEventListener(
+  "click",
+  () => setActiveTool(thickButton, thick_thickness),
+);
 
 // Emoji Stickers
 const stickers: Sticker[] = [
   { content: "💀", name: "skull" },
   { content: "🥀", name: "rose" },
   { content: "💔", name: "heartbreak" },
+  { content: "🗿", name: "moai" },
+  { content: "🥶", name: "cold" },
+  { content: "🐺", name: "wolf" },
+  { content: "🪫", name: "low_battery" },
+  { content: "😈", name: "evil_smile" },
+  { content: "🍆", name: "eggplant" },
+  { content: "🤡", name: "clown" },
 ];
 
 document.body.append(document.createElement("br"));
