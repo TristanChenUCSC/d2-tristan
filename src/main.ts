@@ -27,6 +27,7 @@ interface DisplayCommand {
 // Marker type
 interface MarkerType {
   thickness: number;
+  color: string;
 }
 
 type Point = { x: number; y: number };
@@ -45,6 +46,7 @@ function makeMarkerLine(
     display(ctx: CanvasRenderingContext2D) {
       if (points.length > 1) {
         ctx.lineWidth = tool.thickness;
+        ctx.strokeStyle = tool.color;
         ctx.beginPath();
         const { x, y } = points[0];
         ctx.moveTo(x, y);
@@ -69,6 +71,7 @@ function makeToolPreview(
     },
     display(ctx: CanvasRenderingContext2D) {
       ctx.beginPath();
+      ctx.fillStyle = tool.color;
       ctx.arc(x, y, tool.thickness, 0, 2 * Math.PI);
       ctx.fill();
     },
@@ -123,7 +126,30 @@ let redoStack: DisplayCommand[] = []; // Stack for redo functionality
 const thin_thickness = 2;
 const thick_thickness = 6;
 
-let currentMarkerTool: MarkerType = { thickness: thin_thickness }; // Default tool
+// Color palette
+const colors: string[] = [
+  "black",
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "brown",
+  "gray",
+  "pink",
+  "cyan",
+  "magenta",
+  "lime",
+];
+
+let currentColor: string = colors[Math.floor(Math.random() * colors.length)];
+
+// Current tool and preview
+let currentMarkerTool: MarkerType = {
+  thickness: thin_thickness,
+  color: currentColor,
+}; // Default tool
 let toolPreview: boolean = false;
 let toolPreviewCommand: DisplayCommand | null = null;
 
@@ -313,7 +339,8 @@ thinButton.classList.add("selectedTool");
 
 function setActiveTool(button: HTMLButtonElement, thickness: number) {
   stickerMode = false;
-  currentMarkerTool = { thickness };
+  currentColor = colors[Math.floor(Math.random() * colors.length)];
+  currentMarkerTool = { thickness, color: currentColor };
   if (activeToolButton) {
     activeToolButton.classList.remove("selectedTool");
   }
